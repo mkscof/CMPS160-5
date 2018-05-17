@@ -26,7 +26,6 @@ void main() {
 	vec3 viewDirection = vec3(0, 0, 1);
 	vec3 reflectedVector = reflect(-lightDirection, normal);
 
-	//float shine = 25.0;
 	float dotted = dot(reflectedVector, lightDirection);
 	float rDotVp = max(pow(dotted, u_shine), 0.0);
 
@@ -34,10 +33,11 @@ void main() {
  	vec3 ambient = u_AmbientLight * v_Color.rgb;
   	vec3 specular = u_SpecularLight * rDotVp;
 
+  	vec3 final_color = diffuse + ambient + specular;
+
   	int shading_type = u_shade_toggle;
   	if(shading_type == 1){	//Phong
-  		 //gl_FragColor = v_Color;
-  		 gl_FragColor = vec4(diffuse + ambient + specular, v_Color.a);
+  		gl_FragColor = vec4(final_color, v_Color.a);
   	}
   	else{
   		gl_FragColor = v_Color;

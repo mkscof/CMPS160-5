@@ -95,8 +95,11 @@ function start(gl, canvas) {
 
     // Get the storage locations of uniform variables and so on
     var u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
-    var u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
     var u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+
+    var u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
+    var u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+
     var u_LightColor = gl.getUniformLocation(gl.program, 'u_LightColor');
     var u_LightPosition = gl.getUniformLocation(gl.program, 'u_LightPosition');
     var u_AmbientLight = gl.getUniformLocation(gl.program, 'u_AmbientLight');
@@ -104,7 +107,7 @@ function start(gl, canvas) {
     var u_shade_toggle = gl.getUniformLocation(gl.program, 'u_shade_toggle');
     var u_shine = gl.getUniformLocation(gl.program, 'u_shine');
     
-    if (!u_MvpMatrix || !u_NormalMatrix || !u_LightColor || !u_LightPosition|| !u_AmbientLight || !u_SpecularLight || !u_shade_toggle) { 
+    if (!u_NormalMatrix || !u_ProjectionMatrix || !u_ViewMatrix || !u_LightColor || !u_LightPosition|| !u_AmbientLight || !u_SpecularLight || !u_shade_toggle) { 
         console.log('Failed to get the storage location');
         return;
     }
@@ -123,19 +126,23 @@ function start(gl, canvas) {
     gl.uniform1f(u_shine, 25.0);
 
     var modelMatrix = new Matrix4();  // Model matrix
-    var mvpMatrix = new Matrix4();    // Model view projection matrix
     var normalMatrix = new Matrix4(); // Transformation matrix for normals
+
+    var viewMatrix = new Matrix4();
+    var projectionMatrix = new Matrix4();
 
     // Calculate the model matrix
     modelMatrix.setRotate(90, 0, 1, 0); // Rotate around the y-axis
+
     // Pass the model matrix to u_ModelMatrix
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
-    // Pass the model view projection matrix to u_MvpMatrix
-    mvpMatrix.setPerspective(30, canvas.width/canvas.height, 1, 100);
-    mvpMatrix.lookAt(6, 6, 14, 0, 0, 0, 0, 1, 0);
-    mvpMatrix.multiply(modelMatrix);
-    gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
+    // Calculate projection and view matrices
+    viewMatrix.setLookAt(6, 6, 10, 0, 0, 0, 0, 1, 0);
+    projectionMatrix.setPerspective(60, canvas.width/canvas.height, 1, 100);
+    
+    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+    gl.uniformMatrix4fv(u_ProjectionMatrix, false, projectionMatrix.elements);
 
     // Pass the matrix to transform the normal based on the model matrix to u_NormalMatrix
     normalMatrix.setInverseOf(modelMatrix);
@@ -246,23 +253,26 @@ function drawCube(gl, canvas){
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     var u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
-    var u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
     var u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+    var u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+    var u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
 
     var modelMatrix = new Matrix4();  // Model matrix
-    var mvpMatrix = new Matrix4();    // Model view projection matrix
     var normalMatrix = new Matrix4(); // Transformation matrix for normals
+    var projectionMatrix = new Matrix4();
+    var viewMatrix = new Matrix4();
 
     // Calculate the model matrix
     modelMatrix.setRotate(90, 0, 1, 0); // Rotate around the y-axis
     // Pass the model matrix to u_ModelMatrix
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
-    // Pass the model view projection matrix to u_MvpMatrix
-    mvpMatrix.setPerspective(30, canvas.width/canvas.height, 1, 100);
-    mvpMatrix.lookAt(6, 6, 14, 0, 0, 0, 0, 1, 0);
-    mvpMatrix.multiply(modelMatrix);
-    gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
+    // Calculate projection matrix
+    viewMatrix.setLookAt(6, 6, 10, 0, 0, 0, 0, 1, 0);
+    projectionMatrix.setPerspective(60, canvas.width/canvas.height, 1, 100);
+    
+    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+    gl.uniformMatrix4fv(u_ProjectionMatrix, false, projectionMatrix.elements);
 
     // Pass the matrix to transform the normal based on the model matrix to u_NormalMatrix
     normalMatrix.setInverseOf(modelMatrix);
