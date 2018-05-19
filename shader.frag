@@ -15,6 +15,7 @@ varying vec3 v_Normal;
 varying vec3 v_Position;
 
 uniform float u_shine;
+uniform int u_Picked;
 uniform int u_shade_toggle;
 
 void main() {
@@ -35,9 +36,22 @@ void main() {
 
   	vec3 final_color = diffuse + ambient + specular;
 
+  	int highlight = 1;
+	if(u_Picked == 0){
+		highlight = 0;
+	}
+	else{
+		highlight = 1;
+	}
+
   	int shading_type = u_shade_toggle;
   	if(shading_type == 1){	//Phong
-  		gl_FragColor = vec4(final_color, v_Color.a);
+  		if(highlight == 0){
+	      gl_FragColor = vec4(final_color, v_Color.a);
+	    }
+	    else{
+	      gl_FragColor = vec4(final_color, v_Color.a - 0.1);
+	    }
   	}
   	else{
   		gl_FragColor = v_Color;

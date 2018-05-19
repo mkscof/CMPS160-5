@@ -47,7 +47,6 @@ function main() {
     var slider = document.getElementById("glossiness");
     //output.innerHTML = slider.value;
     slider.oninput = function(ev){ setGloss(ev, gl, canvas, slider); }
-    
 }
 
 // set appropriate shader and start if both are loaded
@@ -75,7 +74,7 @@ function start(gl, canvas) {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Register function event handlers
-    
+    canvas.onmousedown = function(ev){ faceCalc(ev, gl, canvas); }; // Mouse is pressed
     window.onkeypress = function(ev){ keypress(canvas, ev, gl); };
     document.getElementById('update_screen').onclick = function(){ updateScreen(canvas, gl); };
     document.getElementById('save_canvas').onclick = function(){ saveCanvas(); };
@@ -106,8 +105,9 @@ function start(gl, canvas) {
     var u_SpecularLight = gl.getUniformLocation(gl.program, 'u_SpecularLight');
     var u_shade_toggle = gl.getUniformLocation(gl.program, 'u_shade_toggle');
     var u_shine = gl.getUniformLocation(gl.program, 'u_shine');
+    var u_Picked = gl.getUniformLocation(gl.program, 'u_Picked');
     
-    if (!u_NormalMatrix || !u_ProjectionMatrix || !u_ViewMatrix || !u_LightColor || !u_LightPosition|| !u_AmbientLight || !u_SpecularLight || !u_shade_toggle) { 
+    if (!u_NormalMatrix || !u_ProjectionMatrix || !u_ViewMatrix || !u_LightColor || !u_LightPosition|| !u_AmbientLight || !u_SpecularLight || !u_shade_toggle || !u_Picked) { 
         console.log('Failed to get the storage location');
         return;
     }
@@ -124,6 +124,8 @@ function start(gl, canvas) {
     gl.uniform1i(u_shade_toggle, 0);
     //Set shininess
     gl.uniform1f(u_shine, 25.0);
+    // Init selected object
+    gl.uniform1i(u_Picked, 0);
 
     var modelMatrix = new Matrix4();  // Model matrix
     var normalMatrix = new Matrix4(); // Transformation matrix for normals
@@ -138,7 +140,7 @@ function start(gl, canvas) {
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
     // Calculate projection and view matrices
-    viewMatrix.setLookAt(6, 6, 10, 0, 0, 0, 0, 1, 0);
+    viewMatrix.setLookAt(6, 6, 7, 0, 0, 0, 0, 1, 0);
     projectionMatrix.setPerspective(60, canvas.width/canvas.height, 1, 100);
     
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
@@ -209,6 +211,7 @@ function initVertexBuffers(gl) {
   if (!initArrayBuffer(gl, 'a_Position', vertices, 3, gl.FLOAT)) return -1;
   if (!initArrayBuffer(gl, 'a_Color', colors, 3, gl.FLOAT)) return -1;
   if (!initArrayBuffer(gl, 'a_Normal', normals, 3, gl.FLOAT)) return -1;
+  if (!initArrayBuffer(gl, 'a_Picked', vertices, 3, gl.FLOAT)) return -1;
 
   // Unbind the buffer object
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -248,14 +251,48 @@ function initArrayBuffer(gl, attribute, data, num, type) {
   return true;
 }
 
+function faceCalc(ev, gl, canvas) {   
+  var u_Picked = gl.getUniformLocation(gl.program, 'u_Picked');
+  var x = ev.clientX, y = ev.clientY;
+  var rect = ev.target.getBoundingClientRect();
+  if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom) {
+    // If Clicked position is inside the <canvas>, update the selected surface
+    var x_in_canvas = x - rect.left
+    var y_in_canvas = rect.bottom - y;
+    // var x_in_canvas = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
+    // var y_in_canvas = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
+    var object = checkPicked(gl, canvas, x_in_canvas, y_in_canvas, u_Picked);
+    if(object[0] > 0 || object[1] > 0 || object[2] > 0){
+      gl.uniform1i(u_Picked, 1);
+    }
+    else{
+      gl.uniform1i(u_Picked, 0);
+    }
+    //gl.uniform1i(u_Picked, object); // Pass the surface number to u_Picked
+    drawCube(gl, canvas);
+  }
+}
+
+function checkPicked(gl, canvas, x, y, u_Picked){
+  var pixels = new Uint8Array(4);
+  gl.uniform1i(u_Picked, 1);
+  drawCube(gl, canvas);
+  gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  console.log(pixels);
+
+  return pixels;
+}
+
 //Draws cubes from clicked points
 function drawCube(gl, canvas){
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     var u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
     var u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
     var u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
     var u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
+    var u_Picked = gl.getUniformLocation(gl.program, 'u_Picked');
 
     var modelMatrix = new Matrix4();  // Model matrix
     var normalMatrix = new Matrix4(); // Transformation matrix for normals
@@ -268,7 +305,7 @@ function drawCube(gl, canvas){
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
     // Calculate projection matrix
-    viewMatrix.setLookAt(6, 6, 10, 0, 0, 0, 0, 1, 0);
+    viewMatrix.setLookAt(6, 6, 7, 0, 0, 0, 0, 1, 0);
     projectionMatrix.setPerspective(60, canvas.width/canvas.height, 1, 100);
     
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
@@ -282,6 +319,7 @@ function drawCube(gl, canvas){
     if (!initArrayBuffer(gl, 'a_Position', vertices, 3, gl.FLOAT)) return -1;
     if (!initArrayBuffer(gl, 'a_Color', colors, 3, gl.FLOAT)) return -1;
     if (!initArrayBuffer(gl, 'a_Normal', normals, 3, gl.FLOAT)) return -1; 
+    if (!initArrayBuffer(gl, 'a_Picked', vertices, 3, gl.FLOAT)) return -1;
 
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_BYTE, 0);
 }

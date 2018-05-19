@@ -1,6 +1,7 @@
 attribute vec4 a_Position; // Position of vertex
 attribute vec4 a_Color; //Diffuse Color
 attribute vec4 a_Normal; //Normal
+attribute float a_Picked; // Not used for this asg
 
 uniform mat4 u_ModelMatrix;
 uniform mat4 u_NormalMatrix;
@@ -16,14 +17,14 @@ varying vec4 v_Color;
 varying vec3 v_Normal;
 varying vec3 v_Position;
 
-attribute float a_Face;
+uniform int u_Picked;
 uniform float u_shine;
 uniform int u_shade_toggle;
 
 void main() {
   gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
 
-  int face = int(a_Face);
+  int picked = int(a_Picked);
 
   v_Normal = normalize(vec3(u_NormalMatrix * a_Normal));
   v_Position = vec3(u_ModelMatrix * a_Position);
@@ -41,10 +42,23 @@ void main() {
   vec3 specular = u_SpecularLight * rDotVp;
 
   vec3 final_color = diffuse + ambient + specular;
+
+  int highlight = 1;
+  if(u_Picked == 0){
+    highlight = 0;
+  }
+  else{
+    highlight = 1;
+  }
   
   int shading_type = u_shade_toggle;
   if(shading_type == 0){  //Gouraud
-    v_Color = vec4(final_color, a_Color.a);
+    if(highlight == 0){
+      v_Color = vec4(final_color, a_Color.a);
+    }
+    else{
+      v_Color = vec4(final_color, a_Color.a - 0.1);
+    }
   }
   else{
     v_Color = a_Color;
