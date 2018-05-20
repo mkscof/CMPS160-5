@@ -1,9 +1,9 @@
 attribute vec4 a_Position; // Position of vertex
 attribute vec4 a_Color; //Diffuse Color
 attribute vec4 a_Normal; //Normal
-attribute float a_Picked; // Not used for this asg
 
 uniform mat4 u_ModelMatrix;
+uniform mat4 u_MvpMatrix;
 uniform mat4 u_NormalMatrix;
 uniform mat4 u_ViewMatrix;
 uniform mat4 u_ProjectionMatrix;
@@ -18,13 +18,18 @@ varying vec3 v_Normal;
 varying vec3 v_Position;
 
 uniform int u_Picked;
+uniform int u_Perspective;
 uniform float u_shine;
 uniform int u_shade_toggle;
 
 void main() {
-  gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
-
-  int picked = int(a_Picked);
+  int setPerspective = u_Perspective;
+  if(setPerspective == 0){
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
+  }
+  else{
+    gl_Position = u_MvpMatrix * a_Position;
+  }
 
   v_Normal = normalize(vec3(u_NormalMatrix * a_Normal));
   v_Position = vec3(u_ModelMatrix * a_Position);
