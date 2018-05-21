@@ -14,6 +14,9 @@ var specCount = 0;
 var lightPosX = 3.3;
 var viewType = 0;
 var nearPlane = 0;
+var cameraToggle = 0;
+var cameraX = 6;
+var cameraY = 6;
 
 function main() {
   // Retrieve <canvas> element
@@ -48,6 +51,9 @@ function main() {
 
   var pbutton = document.getElementById("changePerspective");
   pbutton.onclick = function(ev){ changePerspective(ev, gl, canvas); };
+
+  var cbutton = document.getElementById("moveCamera");
+  cbutton.onclick = function(ev){ moveCamera(ev, gl, canvas); };
 
   var gSlider = document.getElementById("glossiness");
   gSlider.oninput = function(ev){ setGloss(ev, gl, canvas, gSlider); }
@@ -329,12 +335,12 @@ function drawCube(gl, canvas){
  
   // Pass the model view projection matrix to u_MvpMatrix
   mvpMatrix.setPerspective(30, canvas.width/canvas.height, nearPlane, 100);
-  mvpMatrix.lookAt(6, 6, 14, 0, 0, 0, 0, 1, 0);
+  mvpMatrix.lookAt(cameraX, cameraY, 14, 0, 0, 0, 0, 1, 0);
   mvpMatrix.multiply(modelMatrix);
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
 
   // Calculate projection matrix
-  viewMatrix.setLookAt(6, 6, 7, 0, 0, 0, 0, 1, 0);
+  viewMatrix.setLookAt(cameraX, cameraY, 7, 0, 0, 0, 0, 1, 0);
   projectionMatrix.setPerspective(60, canvas.width/canvas.height, nearPlane, 100);
   
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
@@ -393,6 +399,20 @@ function moveLight(ev, gl, canvas){
   var u_LightPosition = gl.getUniformLocation(gl.program, 'u_LightPosition');
   lightPosX += 0.1;
   gl.uniform3f(u_LightPosition, lightPosX, 4.0, 3.5);
+  drawCube(gl, canvas);
+}
+
+function moveCamera(ev, gl, canvas){
+  if(cameraToggle == 0){
+    cameraX = 2;
+    cameraY = 8;
+    cameraToggle++;
+  }
+  else{
+    cameraX = 6;
+    cameraY = 6;
+    cameraToggle--;
+  }
   drawCube(gl, canvas);
 }
 
