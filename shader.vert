@@ -52,8 +52,11 @@ void main() {
   if(u_Picked == 0){
     highlight = 0;
   }
-  else{
+  else if(u_Picked == 1){
     highlight = 1;
+  }
+  else{
+    highlight = 2;
   }
   
   int shading_type = u_shade_toggle;
@@ -61,8 +64,11 @@ void main() {
     if(highlight == 0){
       v_Color = vec4(final_color, a_Color.a);
     }
-    else{
+    else if(highlight == 1){
       v_Color = vec4(final_color, a_Color.a - 0.1);
+    }
+    else{
+      v_Color = vec4(50.0, 175.0, 0.0, 1.0);
     }
   }
   else{

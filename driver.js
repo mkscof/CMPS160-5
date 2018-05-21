@@ -88,6 +88,7 @@ function start(gl, canvas) {
 
   // Register function event handlers
   canvas.onmousedown = function(ev){ faceCalc(ev, gl, canvas); }; // Mouse is pressed
+  canvas.onmouseover = function(ev){ hoverHighlight(ev, gl, canvas); };
   window.onkeypress = function(ev){ keypress(canvas, ev, gl); };
   document.getElementById('update_screen').onclick = function(){ updateScreen(canvas, gl); };
   document.getElementById('save_canvas').onclick = function(){ saveCanvas(); };
@@ -196,12 +197,12 @@ function initVertexBuffers(gl) {
   //  v2------v3
   // Coordinates
   vertices = new Float32Array([
-     2.0, 2.0, 2.0,  -2.0, 2.0, 2.0,  -2.0,-2.0, 2.0,   2.0,-2.0, 2.0, // v0-v1-v2-v3 front
-     2.0, 2.0, 2.0,   2.0,-2.0, 2.0,   2.0,-2.0,-2.0,   2.0, 2.0,-2.0, // v0-v3-v4-v5 right
-     2.0, 2.0, 2.0,   2.0, 2.0,-2.0,  -2.0, 2.0,-2.0,  -2.0, 2.0, 2.0, // v0-v5-v6-v1 up
+    2.0, 2.0, 2.0,  -2.0, 2.0, 2.0,  -2.0,-2.0, 2.0,   2.0,-2.0, 2.0, // v0-v1-v2-v3 front
+    2.0, 2.0, 2.0,   2.0,-2.0, 2.0,   2.0,-2.0,-2.0,   2.0, 2.0,-2.0, // v0-v3-v4-v5 right
+    2.0, 2.0, 2.0,   2.0, 2.0,-2.0,  -2.0, 2.0,-2.0,  -2.0, 2.0, 2.0, // v0-v5-v6-v1 up
     -2.0, 2.0, 2.0,  -2.0, 2.0,-2.0,  -2.0,-2.0,-2.0,  -2.0,-2.0, 2.0, // v1-v6-v7-v2 left
     -2.0,-2.0,-2.0,   2.0,-2.0,-2.0,   2.0,-2.0, 2.0,  -2.0,-2.0, 2.0, // v7-v4-v3-v2 down
-     2.0,-2.0,-2.0,  -2.0,-2.0,-2.0,  -2.0, 2.0,-2.0,   2.0, 2.0,-2.0  // v4-v7-v6-v5 back
+    2.0,-2.0,-2.0,  -2.0,-2.0,-2.0,  -2.0, 2.0,-2.0,   2.0, 2.0,-2.0  // v4-v7-v6-v5 back
   ]);
 
   // Colors
@@ -285,11 +286,41 @@ function faceCalc(ev, gl, canvas) {
     // If Clicked position is inside the <canvas>, update the selected surface
     var x_in_canvas = x - rect.left
     var y_in_canvas = rect.bottom - y;
-    // var x_in_canvas = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
-    // var y_in_canvas = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
     var object = checkPicked(gl, canvas, x_in_canvas, y_in_canvas, u_Picked);
+
     if(object[0] > 0 || object[1] > 0 || object[2] > 0){
       gl.uniform1i(u_Picked, 1);
+    }
+    else{
+      gl.uniform1i(u_Picked, 0);
+    }
+    drawCube(gl, canvas);
+  }
+}
+
+function hoverHighlight(ev, gl, canvas){
+  var u_Picked = gl.getUniformLocation(gl.program, 'u_Picked');
+  var x = ev.clientX, y = ev.clientY;
+  var rect = ev.target.getBoundingClientRect();
+  if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom) {
+    // If Clicked position is inside the <canvas>, update the selected surface
+    var x_in_canvas = x - rect.left
+    var y_in_canvas = rect.bottom - y;
+    
+    // var canvas2 = document.createElement('canvas');
+    // canvas2.width = canvas.width;
+    // canvas2.height = canvas.height;
+    // var ctx = canvas2.getContext('2d');
+    // ctx.drawImage(canvas, 0, 0);
+    // var object = ctx.getImageData(x_in_canvas, y_in_canvas, canvas2.width, canvas2.height);
+    // console.log(object);
+
+    var pixels = new Uint8Array(4);
+    drawCube(gl, canvas);
+    gl.readPixels(x_in_canvas, y_in_canvas, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+    if(pixels[0] > 0 || pixels[1] > 0 || pixels[2] > 0){
+      gl.uniform1i(u_Picked, 2);
     }
     else{
       gl.uniform1i(u_Picked, 0);
